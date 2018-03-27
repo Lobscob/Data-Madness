@@ -3,11 +3,9 @@ links <- read.csv('links.csv')
 movies <- read.csv('movies.csv')
 ratings <- read.csv('ratings.csv')
 
-library(corrplot)
 library(cluster)
 
-## find the mean rating a user gives for a genre
-  
+## Below we split all genres into separate columns
   
 s <- strsplit(as.character(movies$genres), split = "|",fixed=T)
 newmovies <- data.frame(movieId=rep(movies$movieId, sapply(s,length)),title = rep(movies$title,sapply(s, length)), genre = unlist(s))
@@ -36,35 +34,15 @@ for(j in 3:length(allgenres)){
 
 }
 
-#train.data <- movieswide[train,]
-#test.data <- movieswide[test,]
-#responseY <- train.data[3:length(train.data)]
-#row.names(responseY)<-movieswide[train,]$title
 
-responseY <- movieswide[3:length(movieswide)]
+responseY <- movieswide[3:length(movieswide)] # Collect the genre matrix
+
+pr.out=prcomp(responseY) # preform PCA on Genre Matrix
 
 
-
-pr.out=prcomp(responseY)
-
-#inspect output
-names(pr.out)
-pr.out$center
-pr.out$scale
-
-#The rotation component provides the principal component loadings
-pr.out$rotation
-dim(pr.out$x)
 #The scale=0 is to make sure that arrows are scaled to represent the loadings
 biplot(pr.out, scale=0)
 
-#We make a few changes in order to mirror the figure 
-pr.out$rotation=-pr.out$rotation
-pr.out$x=-pr.out$x
-biplot(pr.out, scale=0)
-
-#Get standard deviations
-pr.out$sdev
 
 #Variance explained by each PC
 pr.var=pr.out$sdev^2
@@ -73,10 +51,10 @@ pr.var
 pve=pr.var/sum(pr.var)
 pve
 
+# ACCORDING TO THE VARIANCE WE NEED TO USE 4 PRINCIPAL COMPONENTS
 X <- cbind(pr.out$x[,1:4])
-cl <- kmeans(X,3)
-plotcluster(X,cl$cluster)
-legend("topleft")
+
+
 
 #Elbow Method for finding the optimal number of clusters
 set.seed(123)
@@ -90,11 +68,11 @@ plot(1:k.max, wss,
      type="b", pch = 19, frame = FALSE, 
      xlab="Number of clusters K",
      ylab="Total within-clusters sum of squares")
-w
+
 
 # According to this plot we choose to have k=7 although there is not a clear elbow in the plot. 
 
-X <- cbind(pr.out$x[,1:4])
+
 cl <- kmeans(X,7)
 
 plotdata <- as.data.frame(cbind(X[,1:2],cl$cluster))
@@ -103,10 +81,10 @@ colnames(plotdata)<- c("PC1","PC2","Cluster")
 plotdata$Cluster <- factor(plotdata$Cluster)
 
 ggplot(plotdata, aes(x= PC1, y= PC2, label=rownames(plotdata))) +
-  geom_point() + geom_text(aes(label=rownames(plotdata),colour=Cluster),hjust=0.5, vjust=0)
+  geom_point() + geom_text(aes(label=rownames(plotdata),colour=Cluster),hjust=0.5, vjust=0)# plot including movieID
 
 ggplot(plotdata, aes(x= PC1, y= PC2, label=rownames(plotdata))) +
-  geom_point(aes(colour=Cluster))
+  geom_point(aes(colour=Cluster)) # Plot without movieID for clarity
 
 
 ## Now we have all similar movies according to their genres using PCA
@@ -160,4 +138,4 @@ output6 <- fRatings(uniqueUsers,cluster6,4.5)
 output7 <- fRatings(uniqueUsers,cluster7,4.5)
 
 
-
+# We can view our User Groups with View(outputX)
